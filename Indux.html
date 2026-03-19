@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threadora - Final Power Build</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg-deep: #0e001f; --bg-card: #190a2e; --neon-main: #bf00ff; --neon-glow: rgba(191, 0, 255, 0.7); --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg-deep); color: var(--text); padding-bottom: 90px; }
+        
+        /* Header */
+        .header { background: #110026; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 2px solid var(--neon-main); }
+        .brand-logo-dp { height: 50px; width: 50px; border-radius: 50%; border: 2px solid var(--neon-main); object-fit: cover; }
+
+        /* Pages */
+        .page { display: none; padding: 15px; min-height: 80vh; }
+        .page.active { display: block; }
+
+        /* Grid & Cards (Dono jagah same style) */
+        #productContainer, #recommendGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .card { background: var(--bg-card); border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #222; cursor: pointer; }
+        .card img { width: 100%; height: 180px; object-fit: cover; }
+        .wish-icon-home { position: absolute; top: 12px; right: 12px; font-size: 22px; color: rgba(255,255,255,0.2); z-index: 10; }
+        .wish-icon-home.active { color: var(--neon-main); }
+
+        /* Modal & Slider FIX */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-deep); z-index: 4000; overflow-y: auto; scroll-behavior: smooth; }
+        .slider-container { width: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; background: #000; margin-top: 56px; border-bottom: 2px solid var(--neon-main); }
+        .slider-container img { width: 100%; flex-shrink: 0; height: 380px; object-fit: contain; scroll-snap-align: start; scroll-snap-stop: always; }
+
+        /* Sizes */
+        .size-grid { display: flex; gap: 10px; margin-top: 15px; }
+        .size-btn { flex: 1; background: #1a0a30; border: 2px solid #444; color: white; padding: 15px; border-radius: 10px; font-weight: bold; }
+        .size-btn.selected { background: var(--neon-main); border-color: var(--neon-main); box-shadow: 0 0 10px var(--neon-glow); }
+
+        /* Buy Button */
+        .buy-now-btn { background: var(--neon-main); color: white; width: calc(100% - 40px); margin: 20px; padding: 20px; border: none; font-size: 20px; font-weight: bold; position: fixed; bottom: 0; left: 0; z-index: 4500; border-radius: 50px; box-shadow: 0 0 20px var(--neon-glow); }
+
+        /* Orders UI */
+        .list-item { background: var(--bg-card); padding: 12px; border-radius: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; border: 1px solid #333; position: relative; }
+        .list-item img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 1px solid var(--neon-main); }
+        .btn-group { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+        .ord-btn { border: none; padding: 6px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; color: white; }
+        .v-btn { background: #444; }
+        .c-btn { background: #ff4d4d; }
+        .d-btn { background: #222; border: 1px solid #444; color: #888; }
+
+        /* Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #110026; display: flex; height: 65px; align-items: center; border-top: 1px solid #222; z-index: 3000; }
+        .nav-item { flex: 1; text-align: center; color: #666; background: none; border: none; font-size: 24px; cursor: pointer; }
+        .nav-item.active { color: var(--neon-main); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="font-size:26px; font-weight:bold;">Threadora</div>
+    <img src="https://i.ibb.co/wNVXz33y/IMG-20260314-155819.png" class="brand-logo-dp">
+</div>
+
+<div id="homePage" class="page active"><div id="productContainer">Loading Trendy Outfits...</div></div>
+<div id="wishlistPage" class="page"><h3><i class="fa-solid fa-heart"></i> My Wishlist</h3><div id="wishlistItems"></div></div>
+<div id="ordersPage" class="page"><h3><i class="fa-solid fa-box-open"></i> My Orders</h3><div id="orderItems"></div></div>
+<div id="aboutPage" class="page">
+    <div style="background:var(--bg-card); padding:25px; border-radius:15px; border-left:6px solid var(--neon-main);">
+        <h2 style="color:var(--neon-main);">Our Vision</h2>
+        <p>Himachal's Premier Digital Store - Karsog, Mandi.</p>
+        <p>Quality, Innovation, and Style at your doorstep.</p>
+    </div>
+</div>
+
+<div id="productModal" class="modal">
+    <div onclick="closeProduct()" style="padding:18px; position:fixed; top:0; background:#110026; width:100%; z-index:4600; border-bottom:2px solid var(--neon-main); font-weight:bold;"><i class="fa-solid fa-arrow-left"></i> Back to Store</div>
+    
+    <div id="modalContent">
+        <div id="modalSlider" class="slider-container"></div>
+        
+        <div style="padding:20px; padding-bottom:130px;">
+            <h2 id="mName"></h2>
+            <div id="mPrice" style="color:var(--neon-main); font-size:26px; font-weight:bold; margin-bottom:20px;"></div>
+            <div style="font-size:12px; color:#888;">SELECT SIZE</div>
+            <div id="sizeGrid" class="size-grid"></div>
+            
+            <div style="margin-top:50px; border-top: 1px solid #333; padding-top: 20px;">
+                <h3 style="color:var(--neon-main); letter-spacing:1px; margin-bottom:20px;">SUGGESTED PRODUCTS</h3>
+                <div id="recommendGrid"></div>
+            </div>
+        </div>
+    </div>
+    <button class="buy-now-btn" id="buyBtn">BUY NOW</button>
+</div>
+
+<div class="bottom-nav">
+    <button class="nav-item active" id="nav-home" onclick="showPage('homePage', this)"><i class="fa-solid fa-house"></i></button>
+    <button class="nav-item" id="nav-wish" onclick="showPage('wishlistPage', this)"><i class="fa-solid fa-heart"></i></button>
+    <button class="nav-item" id="nav-order" onclick="showPage('ordersPage', this)"><i class="fa-solid fa-box"></i></button>
+    <button class="nav-item" id="nav-about" onclick="showPage('aboutPage', this)"><i class="fa-solid fa-circle-info"></i></button>
+</div>
+
+<script>
+    const csvUrl = "https://docs.google.com/spreadsheets/d/1Ql4Yv4f-E0zWu0xVUWWZt9FrL3wee6ApagnE7b3d9kk/export?format=csv&gid=0";
+    
+    let allProducts = [];
+    let wishlist = JSON.parse(localStorage.getItem('threadora_wishlist')) || [];
+    let orders = JSON.parse(localStorage.getItem('threadora_orders')) || [];
+    let selectedSize = "M";
+
+    window.onload = () => {
+        updateOrders();
+        updateWishlist();
+        loadData();
+    };
+
+    function saveLocalData() {
+        localStorage.setItem('threadora_wishlist', JSON.stringify(wishlist));
+        localStorage.setItem('threadora_orders', JSON.stringify(orders));
+    }
+
+    async function loadData() {
+        const res = await fetch(csvUrl + "&v=" + Date.now());
+        const text = await res.text();
+        const rows = text.split('\n').slice(1);
+        const container = document.getElementById('productContainer');
+        container.innerHTML = '';
+        allProducts = [];
+        
+        rows.forEach((row, index) => {
+            const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+            if (cols && cols.length >= 4) {
+                const p = { id: index + 1, name: cols[0].replace(/"/g,''), price: cols[1].replace(/"/g,''), images: cols[3].replace(/"/g,'').split(',').map(s => s.trim()) };
+                allProducts.push(p);
+                const isWished = wishlist.find(w => w.id === p.id) ? 'active' : '';
+                container.innerHTML += `
+                    <div class="card">
+                        <i class="fa-solid fa-heart wish-icon-home ${isWished}" id="hwish-${p.id}" onclick="toggleWish(event, ${p.id})"></i>
+                        <div onclick="openProduct(${p.id})">
+                            <img src="${p.images[0]}">
+                            <div style="padding:10px;"><b>${p.name}</b><br><span style="color:var(--neon-main)">${p.price}</span></div>
+                        </div>
+                    </div>`;
+            }
+        });
+    }
+
+    function openProduct(id) {
+        const p = allProducts.find(x => x.id === id);
+        if(!p) return;
+        
+        document.getElementById('productModal').scrollTo(0, 0);
+
+        document.getElementById('mName').innerText = p.name;
+        document.getElementById('mPrice').innerText = p.price;
+        document.getElementById('modalSlider').innerHTML = p.images.map(img => `<img src="${img}">`).join('');
+        document.getElementById('modalSlider').scrollLeft = 0;
+
+        const sizes = ["S", "M", "L", "XL"];
+        document.getElementById('sizeGrid').innerHTML = sizes.map(s => `
+            <button class="size-btn ${s==selectedSize?'selected':''}" onclick="selectedSize='${s}'; openProduct(${p.id})">${s}</button>`).join('');
+
+        const recContainer = document.getElementById('recommendGrid');
+        recContainer.innerHTML = '';
+        allProducts.forEach(rp => {
+            if(rp.id !== p.id) {
+                recContainer.innerHTML += `
+                    <div class="card" onclick="openProduct(${rp.id})">
+                        <img src="${rp.images[0]}">
+                        <div style="padding:10px;"><b>${rp.name}</b><br><span style="color:var(--neon-main)">${rp.price}</span></div>
+                    </div>`;
+            }
+        });
+
+        document.getElementById('buyBtn').onclick = () => {
+            const now = new Date();
+            const orderObj = { ...p, size: selectedSize, time: now.toLocaleString(), orderId: Date.now() };
+            orders.unshift(orderObj);
+            saveLocalData();
+            updateOrders(); 
+            closeProduct();
+            showPage('ordersPage', document.getElementById('nav-order'));
+            const details = `ID: ${p.id} | Name: ${p.name} | Size: ${selectedSize}`;
+            window.open(`https://docs.google.com/forms/d/e/1FAIpQLSchIdpvbMDc0TBJHODLxYBfOH0DczTSkygcvSyk32_CBGJ_gQ/viewform?usp=pp_url&entry.1000004175=${encodeURIComponent(details)}`, '_blank');
+        };
+        document.getElementById('productModal').style.display = 'block';
+    }
+
+    function toggleWish(event, id) {
+        event.stopPropagation();
+        const p = allProducts.find(x => x.id === id);
+        if(!p) return;
+        const idx = wishlist.findIndex(item => item.id === id);
+        if(idx === -1) wishlist.unshift(p); else wishlist.splice(idx, 1);
+        saveLocalData();
+        updateWishlist();
+        const icon = document.getElementById(`hwish-${id}`);
+        if(icon) icon.classList.toggle('active');
+    }
+
+    function updateWishlist() {
+        document.getElementById('wishlistItems').innerHTML = wishlist.length === 0 ? "<p>Empty</p>" : wishlist.map(p => `
+            <div class="list-item">
+                <img src="${p.images[0]}">
+                <div style="flex:1;"><b>${p.name}</b><br><small onclick="openProduct(${p.id})" style="color:var(--neon-main); cursor:pointer;">View</small></div>
+                <i class="fa-solid fa-trash-can" style="color:#555;" onclick="toggleWish(event, ${p.id})"></i>
+            </div>`).join('');
+    }
+
+    function updateOrders() {
+        const container = document.getElementById('orderItems');
+        container.innerHTML = orders.length === 0 ? "<p>No orders yet.</p>" : orders.map(o => `
+            <div class="list-item">
+                <img src="${o.images[0]}">
+                <div style="flex:1;">
+                    <b>${o.name}</b> (${o.size})<br><small>${o.time}</small>
+                    <div class="btn-group">
+                        <button class="ord-btn v-btn" onclick="openProduct(${o.id})">View Product</button>
+                        <button class="ord-btn c-btn" onclick="confirmCancel(${o.orderId}, '${o.name.replace(/'/g, "\\'")}')">Cancel Order</button>
+                        <button class="ord-btn d-btn" onclick="deleteHistory(${o.orderId})">Delete from Orders</button>
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    function confirmCancel(oid, name) {
+        if(confirm("Are you sure you want to cancel this order?")) {
+            const cancelFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSc-jojmLCQ7xT5G9BJf1Rog56Z2hLTOkP96CTBsxszfXQlmHA/viewform?usp=sf_link"; 
+            const cancelData = `CANCEL REQUEST: ${name} (ID: ${oid})`;
+            window.open(`${cancelFormUrl}&entry.1000004175=${encodeURIComponent(cancelData)}`, '_blank');
+            orders = orders.filter(o => o.orderId !== oid);
+            saveLocalData();
+            updateOrders();
+        }
+    }
+
+    function deleteHistory(oid) {
+        if(confirm("Remove from order history?")) {
+            orders = orders.filter(o => o.orderId !== oid);
+            saveLocalData();
+            updateOrders();
+        }
+    }
+
+    function showPage(pid, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pid).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function closeProduct() { document.getElementById('productModal').style.display = 'none'; }
+</script>
+</body>
+  </html>
